@@ -1,0 +1,2 @@
+# Pago efectivo
+Ruby SOAP Client to connect with pago efectivo api.
