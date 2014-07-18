@@ -4,19 +4,20 @@ require 'net/http'
 
 module PagoEfectivo
 
-  SCHEMA_TYPES = [
-    {'xmlns:xsd' => 'http://www.w3.org/2001/XMLSchema'},
-    {'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance'},
-    {'xmlns:soap' => 'http://schemas.xmlsoap.org/soap/envelope/'}
-  ]
+  SCHEMA_TYPES = {
+    'xmlns:xsd' => 'http://www.w3.org/2001/XMLSchema',
+    'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance',
+    'xmlns:soap' => 'http://schemas.xmlsoap.org/soap/envelope/'
+  }
 
   def initialize
     @api_server = 'https://pre.pagoefectivo.pe'
   end
 
-  def create_markup(body)
+  def create_markup(header, body)
     xml_markup = Builder::XmlMarkup.new(indent: 2)
     xml_markup.instruct! :xml
+    xml_markup << header.to_s
     xml_markup << body.to_s
     xml_markup
   end
@@ -25,11 +26,10 @@ module PagoEfectivo
     path = '/PagoEfectivoWSCrypto/WSCrypto.asmx'
     hash = { signer: { plain_text: text, private_key: private_key }}
     options = { key_converter: :camelcase, key_to_convert: 'signer'}
-    xml_body = Gyoku.xml(hash, options)
+    attributes = {"soap:Envelope" => SCHEMA_TYPES}
+    xml_body = Gyoku.xml({"soap:Envelope" => {"soap:Body" => hash}, :attributes! => attributes}, options)
 
-    xml = create_markup(xml_header, xml_body)
-    puts xml.to_s
-    #request = Net::HTTP::Post.new(@api_server + path)
+    xml = create_markup(header, xml_body)
   end
 
   def generate_cip
