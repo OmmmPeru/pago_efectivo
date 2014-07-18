@@ -1,0 +1,25 @@
+GIT
+  remote: https://github.com/savonrb/gyoku.git
+  revision: c713b9f3e58aa6d1bced8f7a813a7fd4364b4e81
+  specs:
+    gyoku (1.1.1)
+      builder (>= 2.1.2)
+
+PATH
+  remote: .
+  specs:
+    pago_efectivo (0.0.1)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    builder (3.2.2)
+    cutest (1.2.1)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  cutest
+  gyoku!
+  pago_efectivo!
