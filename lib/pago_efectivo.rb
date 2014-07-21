@@ -14,10 +14,9 @@ module PagoEfectivo
     @api_server = 'https://pre.pagoefectivo.pe'
   end
 
-  def create_markup(header, body)
+  def create_markup(body)
     xml_markup = Builder::XmlMarkup.new(indent: 2)
     xml_markup.instruct! :xml
-    xml_markup << header.to_s
     xml_markup << body.to_s
     xml_markup
   end
@@ -29,7 +28,7 @@ module PagoEfectivo
     attributes = {"soap:Envelope" => SCHEMA_TYPES}
     xml_body = Gyoku.xml({"soap:Envelope" => {"soap:Body" => hash}, :attributes! => attributes}, options)
 
-    xml = create_markup(header, xml_body)
+    xml = create_markup(xml_body)
   end
 
   def generate_cip
