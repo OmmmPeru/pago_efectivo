@@ -26,9 +26,19 @@ module PagoEfectivo
     hash = { signer: { plain_text: text, private_key: private_key }}
     options = { key_converter: :camelcase, key_to_convert: 'signer'}
     attributes = {"soap:Envelope" => SCHEMA_TYPES}
-    xml_body = Gyoku.xml({"soap:Envelope" => {"soap:Body" => hash}, :attributes! => attributes}, options)
+    xml_body = Gyoku.xml({"soap:Envelope" => {"soap:Body" => hash},
+                          :attributes! => attributes}, options)
 
     xml = create_markup(xml_body)
+
+    server = @api_server + path
+    request = Net::HTTP::Post.new(server)
+    request.set_form_data(xml)
+    response = Net::HTTP.start(server.hostname, server.port) do |http|
+      http.use_ssl = true
+      JSON.parse(http.request(request))
+    end
+    reponse
   end
 
   def generate_cip
