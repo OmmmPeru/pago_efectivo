@@ -99,7 +99,7 @@ module PagoEfectivo
                  },
                  params_email: {
                    param_email: {
-                     nombre: '[UsuarioNombre]'
+                     nombre: '[UsuarioNombre]',
                      valor: user.name
                    },
                    param_email: {
