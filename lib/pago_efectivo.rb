@@ -143,6 +143,13 @@ module PagoEfectivo
     response.decrypt_text_response
   end
 
+  def generate_cip token
+    server = 'https://pagoefectivo.pe/GenPago.aspx'
+    query_str = '?Token=' + token.to_s
+    url = server + query_str
+    response = @request.get(url)
+  end
+
   def consult_cip
   end
 
