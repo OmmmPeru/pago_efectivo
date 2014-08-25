@@ -128,6 +128,21 @@ module PagoEfectivo
     response = @request.new(server, verify_ssl: true).post(xml)
   end
 
+  def unencrypt enc_text, private_key
+    path = '/PagoEfectivoWSCrypto/WSCrypto.asmx'
+    hash = { decrypt_text: { encrupt_text: enc_text, private_key: private_key }}
+    options = { key_converter: :camelcase, key_to_convert: 'decrypt_text'}
+    attributes = {"soap:Envelope" => SCHEMA_TYPES}
+    xml_body = Gyoku.xml({"soap:Envelope" => {"soap:Body" => hash},
+                          :attributes! => attributes}, options)
+
+    xml = create_markup(xml_body)
+
+    server = @api_server + path
+    response = Ox.parse(@request.new(server, verify_ssl: true).post(xml))
+    response.decrypt_text_response
+  end
+
   def consult_cip
   end
 
