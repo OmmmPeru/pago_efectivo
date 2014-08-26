@@ -11,8 +11,12 @@ module PagoEfectivo
     'xmlns:soap' => 'http://schemas.xmlsoap.org/soap/envelope/'
   }
 
-  def initialize
-    @api_server = 'https://pre.pagoefectivo.pe'
+  def initialize env=nil
+    if env == 'production'
+      @api_server = 'https://pagoefectivo.pe'
+    else
+      @api_server = 'https://pre.pagoefectivo.pe'
+    end
     @request = RestClient::Resource
   end
 
@@ -144,7 +148,7 @@ module PagoEfectivo
   end
 
   def generate_cip token
-    server = 'https://pagoefectivo.pe/GenPago.aspx'
+    server = '/GenPago.aspx'
     query_str = '?Token=' + token.to_s
     url = server + query_str
     response = @request.get(url)
