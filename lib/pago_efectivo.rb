@@ -177,9 +177,6 @@ module PagoEfectivo
     response.decrypt_text_response
   end
 
-  def generate_cip token
-  end
-
   def delete_cip
   end
 
