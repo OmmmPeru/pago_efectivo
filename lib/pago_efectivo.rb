@@ -40,7 +40,8 @@ module PagoEfectivo
 
     def signature(text)
       path = '/PagoEfectivoWSCrypto/WSCrypto.asmx'
-      hash = { signer: {plain_text: text, private_key: File.read(@private_key)}}
+      private_key = File.read(@private_key).to_s
+      hash = { signer: {plain_text: text, private_key!: private_key}}
       options = { key_converter: :camelcase, key_to_convert: 'signer'}
       attributes = {"soap:Envelope" => SCHEMA_TYPES}
       xml_body = Gyoku.xml({"soap:Envelope" => {"soap:Body" => hash},
@@ -56,7 +57,7 @@ module PagoEfectivo
     def encrypt_text(text)
       path = '/PagoEfectivoWSCrypto/WSCrypto.asmx'
       hash = { encrypt_text: { plain_text: text,
-                               public_key: File.read(@public_key) }}
+                               public_key!: File.read(@public_key) }}
       options = { key_converter: :camelcase, key_to_convert: 'encrypt_text'}
       attributes = {"soap:Envelope" => SCHEMA_TYPES}
       xml_body = Gyoku.xml({"soap:Envelope" => {"soap:Body" => hash},
@@ -147,7 +148,7 @@ module PagoEfectivo
     def unencrypt enc_text
       path = '/PagoEfectivoWSCrypto/WSCrypto.asmx'
       private_key = File.read(@private_key)
-      hash = { decrypt_text:{encrupt_text:enc_text,private_key: private_key }}
+      hash = { decrypt_text:{encrupt_text:enc_text,private_key!: private_key }}
       options = { key_converter: :camelcase, key_to_convert: 'decrypt_text'}
       attributes = {"soap:Envelope" => SCHEMA_TYPES}
       xml_body = Gyoku.xml({"soap:Envelope" => {"soap:Body" => hash},
