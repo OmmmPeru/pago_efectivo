@@ -150,7 +150,30 @@ module PagoEfectivo
     response = @request.get(url)
   end
 
-  def consult_cip
+  def consult_cip capi, key, cips, info_request=nil
+    path = '/PagoEfectivoWSGeneral/WSCIP.asmx'
+    hash = { consultar_cip: {request: {
+               CAPI: capi, c_clave: key,
+               CIPS: {
+                 cips.each do |cip|
+                   string: cip
+                 end
+               },
+              info_request: info_request
+            }}}
+    options = { key_converter: :camelcase}
+    attributes = {"soap:Envelope" => SCHEMA_TYPES}
+    xml_body = Gyoku.xml({"soap:Envelope" => {"soap:Body" => hash},
+                          :attributes! => attributes}, options)
+
+    xml = create_markup(xml_body)
+
+    server = @api_server + path
+    response = Ox.parse(@request.new(server, verify_ssl: true).post(xml))
+    response.decrypt_text_response
+  end
+
+  def generate_cip token
   end
 
   def delete_cip
