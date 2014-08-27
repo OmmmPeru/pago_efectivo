@@ -19,6 +19,9 @@ module PagoEfectivo
         @api_server = 'https://pre.pagoefectivo.pe'
       end
 
+      if ENV['QUOTAGUARDSTATIC_URL'] != nil
+        RestClient.proxy = ENV['QUOTAGUARDSTATIC_URL']
+      end
       @request = RestClient::Resource
     end
 
