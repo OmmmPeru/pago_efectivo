@@ -50,7 +50,7 @@ module PagoEfectivo
       xml = create_markup(xml_body)
 
       server = @api_server + path
-      response = Ox.parse(@request.new(server, verify_ssl: true).post(xml))
+      response = Ox.parse(@request.new(server, verify_ssl: true).post(xml, content_type: 'xml'))
       response.signer_result
     end
 
