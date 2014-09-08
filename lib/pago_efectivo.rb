@@ -19,6 +19,7 @@ module PagoEfectivo
       if ENV['QUOTAGUARDSTATIC_URL'] != nil
         @proxy = ENV['QUOTAGUARDSTATIC_URL']
       end
+      @crypto_path = '/PagoEfectivoWSCrypto/WSCrypto.asmx?WSDL'
     end
 
     def set_key type, path
@@ -31,8 +32,7 @@ module PagoEfectivo
     end
 
     def signature(text)
-      path = '/PagoEfectivoWSCrypto/WSCrypto.asmx?WSDL'
-      server = @api_server + path
+      server = @api_server + @crypto_path
       client = Savon.client(wsdl: server, proxy: @proxy)
       response = client.call(:signer, message: {
                               plain_text: text, private_key: @private_key
@@ -41,13 +41,21 @@ module PagoEfectivo
     end
 
     def encrypt_text(text)
-      path = '/PagoEfectivoWSCrypto/WSCrypto.asmx?WSDL'
-      server = @api_server + path
+      server = @api_server + @crypto_path
       client = Savon.client(wsdl: server, proxy: @proxy)
       response = client.call(:encrypt_text, message: {
                               plain_text: text, public_key: @public_key
                             })
       response.to_hash[:encrypt_text_response][:encrypt_text_result]
+    end
+
+    def unencrypt enc_text
+      server = @api_server + @crypto_path
+      client = Savon.client(wsdl: server, proxy: @proxy)
+      response = client.call(:decrypt_text, message: {
+                              encrypt_text: enc_text, private_key: @private_key
+                            })
+      response.to_hash[:decrypt_text_response][:decrypt_text_result]
     end
 
     def request_cip(cod_serv, signer, currency, total, pay_methods, cod_trans,
@@ -124,22 +132,6 @@ module PagoEfectivo
       path = '/PagoEfectivoWSGeneralv2/service.asmx'
       server = @api_server + path
       response = @request.new(server, verify_ssl: true).post(xml)
-    end
-
-    def unencrypt enc_text
-      path = '/PagoEfectivoWSCrypto/WSCrypto.asmx'
-      private_key = File.read(@private_key)
-      hash = { decrypt_text:{encrupt_text:enc_text,private_key!: private_key }}
-      options = { key_converter: :camelcase, key_to_convert: 'decrypt_text'}
-      attributes = {"soap:Envelope" => SCHEMA_TYPES}
-      xml_body = Gyoku.xml({"soap:Envelope" => {"soap:Body" => hash},
-                            :attributes! => attributes}, options)
-
-      xml = create_markup(xml_body)
-
-      server = @api_server + path
-      response = Ox.parse(@request.new(server, verify_ssl: true).post(xml))
-      response.decrypt_text_response
     end
 
     def generate_cip token
