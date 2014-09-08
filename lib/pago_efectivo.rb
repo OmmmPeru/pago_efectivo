@@ -1,7 +1,4 @@
-require 'gyoku'
-require 'builder'
-require 'rest-client'
-require 'ox'
+require 'savon'
 
 module PagoEfectivo
 
@@ -16,60 +13,41 @@ module PagoEfectivo
       if env == 'production'
         @api_server = 'https://pagoefectivo.pe'
       else
-        @api_server = 'https://pre.pagoefectivo.pe'
+        @api_server = 'http://pre.pagoefectivo.pe'
       end
 
       if ENV['QUOTAGUARDSTATIC_URL'] != nil
-        RestClient.proxy = ENV['QUOTAGUARDSTATIC_URL']
+        @proxy = ENV['QUOTAGUARDSTATIC_URL']
       end
-      @request = RestClient::Resource
     end
 
     def set_key type, path
       raise 'path to your key is not valid' unless File.exists?(path)
       if type == 'private'
-        @private_key = path
+        @private_key = File.open(path, 'rb') {|f| Base64.encode64(f.read)}
       elsif type == 'public'
-        @public_key = path
+        @public_key = File.open(path, 'rb') {|f| Base64.encode64(f.read)}
       end
     end
 
-    def create_markup(body)
-      xml_markup = Builder::XmlMarkup.new(indent: 2)
-      xml_markup.instruct! :xml
-      xml_markup << body.to_s
-      xml_markup
-    end
-
     def signature(text)
-      path = '/PagoEfectivoWSCrypto/WSCrypto.asmx'
-      private_key = File.read(@private_key).to_s
-      hash = { signer: {plain_text: text, private_key!: private_key}}
-      options = { key_converter: :camelcase, key_to_convert: 'signer'}
-      attributes = {"soap:Envelope" => SCHEMA_TYPES}
-      xml_body = Gyoku.xml({"soap:Envelope" => {"soap:Body" => hash},
-                            :attributes! => attributes}, options)
-
-      xml = create_markup(xml_body)
-
+      path = '/PagoEfectivoWSCrypto/WSCrypto.asmx?WSDL'
       server = @api_server + path
-      response = Ox.parse(@request.new(server, verify_ssl: true).post(xml, content_type: 'xml'))
-      response.signer_result
+      client = Savon.client(wsdl: server, proxy: @proxy)
+      response = client.call(:signer, message: {
+                              plain_text: text, private_key: @private_key
+                            })
+      response.to_hash[:signer_response][:signer_result]
     end
 
     def encrypt_text(text)
-      path = '/PagoEfectivoWSCrypto/WSCrypto.asmx'
-      hash = { encrypt_text: { plain_text: text,
-                               public_key!: File.read(@public_key) }}
-      options = { key_converter: :camelcase, key_to_convert: 'encrypt_text'}
-      attributes = {"soap:Envelope" => SCHEMA_TYPES}
-      xml_body = Gyoku.xml({"soap:Envelope" => {"soap:Body" => hash},
-                            :attributes! => attributes}, options)
-
-      xml = create_markup(xml_body)
+      path = '/PagoEfectivoWSCrypto/WSCrypto.asmx?WSDL'
       server = @api_server + path
-      response = Ox.parse(@request.new(server, verify_ssl: true).post(xml))
-      response.encrypt_text_result
+      client = Savon.client(wsdl: server, proxy: @proxy)
+      response = client.call(:encrypt_text, message: {
+                              plain_text: text, public_key: @public_key
+                            })
+      response.to_hash[:encrypt_text_response][:encrypt_text_result]
     end
 
     def request_cip(cod_serv, signer, currency, total, pay_methods, cod_trans,
