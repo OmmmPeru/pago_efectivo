@@ -1,6 +1,10 @@
 require 'savon'
+require 'gyoku'
+require 'builder'
 
 module PagoEfectivo
+  CURRENCIES = {soles: {id: 1, symbol: 'S/.'}, dolares: {id: 2, symbol: '$'}}
+  PAY_METHODS = [1,2] #[{'bancos' => 1}, {'cuenta_virtual' => 2}]
 
   class Client
     SCHEMA_TYPES = {
@@ -20,6 +24,7 @@ module PagoEfectivo
         @proxy = ENV['QUOTAGUARDSTATIC_URL']
       end
       @crypto_path = '/PagoEfectivoWSCrypto/WSCrypto.asmx?WSDL'
+      @cip_path = '/PagoEfectivoWSGeneralv2/service.asmx?WSDL'
     end
 
     def set_key type, path
@@ -30,6 +35,13 @@ module PagoEfectivo
         @public_key = File.open(path, 'rb') {|f| Base64.encode64(f.read)}
       end
     end
+
+   def create_markup(body)
+     xml_markup = Builder::XmlMarkup.new(indent: 2)
+     xml_markup.instruct! :xml
+     xml_markup << body.to_s
+     xml_markup
+   end
 
     def signature(text)
       server = @api_server + @crypto_path
@@ -58,29 +70,29 @@ module PagoEfectivo
       response.to_hash[:decrypt_text_response][:decrypt_text_result]
     end
 
-    def request_cip(cod_serv, signer, currency, total, pay_methods, cod_trans,
-                    email, user, additional_d, cod_servata, exp_date, place,
-                    pay_concept, origin_code, origin_type)
+    def generate_xml(cod_serv, currency, total, pay_methods, cod_trans, email,
+                     user, additional_data, exp_date, place, pay_concept,
+                     origin_code, origin_type)
       # cod_serv => código de servicio asignado
       # signer => trama firmada con llave privada
-      hash = { sol_pago: {
-                 id_moneda: currency.id,
+      child_hash = { sol_pago: {
+                 id_moneda: currency[:id],
                  total: total, # 18 enteros, 2 decimales. Separados por `,`
                  metodos_pago: pay_methods,
-                 cod_servicio: cServ,
+                 cod_servicio: cod_serv,
                  cod_transaccion: cod_trans, # referencia al pago
                  email_comercio: email,
                  fecha_a_expirar: exp_date, # (DateTime.now + 4).to_s(:db)
-                 usuario_id: user.id,
+                 usuario_id: user[:id],
                  data_adicional: additional_data,
-                 usuario_nombre: user.first_name,
-                 usuario_apellidos: user.last_name,
-                 usuario_localidad: place.loc,
-                 usuario_provincia: place.prov,
-                 usuario_pais: place.country,
+                 usuario_nombre: user[:first_name],
+                 usuario_apellidos: user[:last_name],
+                 usuario_localidad: place[:loc],
+                 usuario_provincia: place[:prov],
+                 usuario_pais: place[:country],
                  usuario_alias: '',
-                 usuario_tipo_doc: user.doc_type, # tipo de documento DNI, LE, RUC
-                 usuario_numero_doc: user.doc_num,
+                 usuario_tipo_doc: user[:doc_type], # tipo de documento DNI, LE, RUC
+                 usuario_numero_doc: user[:doc_num],
                  usuario_email: '',
                  concepto_pago: pay_concept,
                  detalles: {
@@ -97,20 +109,16 @@ module PagoEfectivo
                  params_url: {
                    param_url: {
                      nombre: 'IDCliente',
-                     valor: user.id
-                   },
-                   param_url: {
-                     nombre: 'FechaHoraRegistro',
-                     valor: DateTime.now.to_s(:db)
+                     valor: user[:id]
                    },
                    params_email: {
                      param_email: {
                        nombre: '[UsuarioNombre]',
-                       valor: user.name
+                       valor: user[:first_name]
                      },
                      param_email: {
                        nombre: '[Moneda]',
-                       valor: currency.symbol
+                       valor: currency[:symbol]
                      }
                    }
                  }
@@ -118,27 +126,18 @@ module PagoEfectivo
              }
       child_options = { key_converter: :camelcase}
       xml_child = create_markup(Gyoku.xml(child_hash, child_options))
-
-      hash_parent = {generar_cip_mod_1: { request: {
-                      cod_serv: cod_serv,
-                      firma: signer,
-                      xml: xml_child
-                    }}}
-      attributes = {"soap:Envelope" => SCHEMA_TYPES}
-      options = { key_converter: :camelcase, except: 'request'}
-      xml_parent = Gyoku.xml({"soap:Envelope" => {"soap:Body" => hash_parent},
-                            :attributes! => attributes}, options)
-      xml = create_markup(xml_parent)
-      path = '/PagoEfectivoWSGeneralv2/service.asmx'
-      server = @api_server + path
-      response = @request.new(server, verify_ssl: true).post(xml)
     end
 
-    def generate_cip token
-      server = '/GenPago.aspx'
-      query_str = '?Token=' + token.to_s
-      url = server + query_str
-      response = @request.get(url)
+    def generate_cip(cod_serv, signer, xml)
+      server = @api_server + @cip_path
+      client = Savon.client(wsdl: server, proxy: @proxy)
+      response = client.call(:generar_cip_mod1, message: {
+                              request: {
+                                'CodServ' => cod_serv,
+                                'Firma' => signer,
+                                'Xml' => xml
+                            }})
+      response.to_hash[:generar_cip_mod1_response][:generar_cip_mod1_result]
     end
 
     def consult_cip capi, key, cips, info_request=nil
