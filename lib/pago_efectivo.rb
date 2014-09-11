@@ -1,6 +1,5 @@
 require 'savon'
 require 'gyoku'
-require 'builder'
 
 module PagoEfectivo
   CURRENCIES = {soles: {id: 1, symbol: 'S/.'}, dolares: {id: 2, symbol: '$'}}
@@ -37,8 +36,7 @@ module PagoEfectivo
     end
 
    def create_markup(body)
-     xml_markup = Builder::XmlMarkup.new(indent: 2)
-     xml_markup.instruct! :xml
+     xml_markup = '<?xml version="1.0" encoding="UTF-8"?>'
      xml_markup << body.to_s
      xml_markup
    end
