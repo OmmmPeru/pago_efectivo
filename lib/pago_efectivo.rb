@@ -146,27 +146,28 @@ module PagoEfectivo
       response.to_hash[:generar_cip_mod1_response][:generar_cip_mod1_result]
     end
 
-    def consult_cip capi, key, cips, info_request=nil
-      path = '/PagoEfectivoWSGeneral/WSCIP.asmx'
+    # capi: api code, provided by pago efectivo
+    # cclave: key, provided by pago efectivo
+    # cips: array of cips
+    # info_request: no specified in pago efectivo documentation, send blank
+    #               for now
+    def consult_cip capi, cclave, cips, info_request=''
       cip_arr = {}
       cips.each do |cip|
         cip_arr = cip_arr.merge({string: cip})
       end
-      hash = { consultar_cip: {request: {
-                 CAPI: capi, c_clave: key,
-                 CIPS: cip_arr,
-                info_request: info_request
-              }}}
-      options = { key_converter: :camelcase}
-      attributes = {"soap:Envelope" => SCHEMA_TYPES}
-      xml_body = Gyoku.xml({"soap:Envelope" => {"soap:Body" => hash},
-                            :attributes! => attributes}, options)
 
-      xml = create_markup(xml_body)
-
-      server = @api_server + path
-      response = Ox.parse(@request.new(server, verify_ssl: true).post(xml))
-      response.decrypt_text_response
+      server = @api_server + @cip_path
+      client = Savon.client(wsdl: server, proxy: @proxy)
+      response = client.call(:consultar_cip_mod1, message: {
+                   'request' => {
+                     'CAPI' => capi,
+                     'CClave' => cclave,
+                     'CIPS' => cip_arr,
+                     info_request: info_request
+                   }
+                 })
+      response.to_hash
     end
 
     def delete_cip
