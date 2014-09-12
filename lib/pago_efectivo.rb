@@ -1,5 +1,6 @@
 require 'savon'
 require 'gyoku'
+require 'nokogiri'
 
 module PagoEfectivo
   CURRENCIES = {soles: {id: 1, symbol: 'S/.'}, dolares: {id: 2, symbol: '$'}}
@@ -36,9 +37,7 @@ module PagoEfectivo
     end
 
    def create_markup(body)
-     xml_markup = '<?xml version="1.0" encoding="UTF-8"?>'
-     xml_markup << body.to_s
-     xml_markup
+     xml_markup = Nokogiri.XML(body).to_xml
    end
 
     def signature(text)
@@ -78,7 +77,7 @@ module PagoEfectivo
                  total: total, # 18 enteros, 2 decimales. Separados por `,`
                  metodos_pago: pay_methods,
                  cod_servicio: cod_serv,
-                 cod_transaccion: cod_trans, # referencia al pago
+                 codtransaccion: cod_trans, # referencia al pago
                  email_comercio: email,
                  fecha_a_expirar: exp_date, # (DateTime.now + 4).to_s(:db)
                  usuario_id: user[:id],
@@ -91,7 +90,7 @@ module PagoEfectivo
                  usuario_alias: '',
                  usuario_tipo_doc: user[:doc_type], # tipo de documento DNI, LE, RUC
                  usuario_numero_doc: user[:doc_num],
-                 usuario_email: '',
+                 usuario_email: user[:email],
                  concepto_pago: pay_concept,
                  detalles: {
                    detalle: {
@@ -123,7 +122,8 @@ module PagoEfectivo
                }
              }
       child_options = { key_converter: :camelcase}
-      xml_child = create_markup(Gyoku.xml(child_hash, child_options))
+      gyoku_xml = Gyoku.xml(child_hash, child_options)
+      xml_child = create_markup(gyoku_xml)
     end
 
     def generate_cip(cod_serv, signer, xml)
