@@ -21,10 +21,6 @@ scope do
     assert markup.include?('?xml')
   end
 
-  test 'set_key should set path for key to use' do
-    client = PagoEfectivo::Client.new
-    client.set_key 'private', 'test/fake_key'
-    private_key = client.instance_variable_get(:@private_key)
-    assert private_key == 'test/fake_key'
+  test 'set_key should keep key like binary' do
   end
 end
