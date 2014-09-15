@@ -146,28 +146,33 @@ module PagoEfectivo
       response.to_hash[:generar_cip_mod1_response][:generar_cip_mod1_result]
     end
 
-    # capi: api code, provided by pago efectivo
-    # cclave: key, provided by pago efectivo
-    # cips: array of cips
+    # cod_serv: service code, provided by pago efectivo
+    # cips: string of cips separated with comma (,)
+    # signed_cips: cips passed by signer method
+    # encrypted_cips: cips passed by encrypted method
     # info_request: no specified in pago efectivo documentation, send blank
     #               for now
-    def consult_cip capi, cclave, cips, info_request=''
-      cip_arr = {}
-      cips.each do |cip|
-        cip_arr = cip_arr.merge({string: cip})
-      end
-
+    def consult_cip cod_serv, signed_cips, encrypted_cips, info_request=''
       server = @api_server + @cip_path
       client = Savon.client(wsdl: server, proxy: @proxy)
       response = client.call(:consultar_cip_mod1, message: {
                    'request' => {
-                     'CAPI' => capi,
-                     'CClave' => cclave,
-                     'CIPS' => cip_arr,
+                     'CodServ' => cod_serv,
+                     'Firma' => signed_cips,
+                     'CIPS' => encrypted_cips,
                      info_request: info_request
                    }
                  })
-      response.to_hash
+      response.to_hash[:consultar_cip_mod1_response][:consultar_cip_mod1_result]
+    end
+
+    # after unencrypt consult cip result this return string so we need parse
+    # this for access cip data in more easy way
+    def parse_consult_cip_result uncrypt_text
+      parser = Nori.new
+      cip = parser.parse uncrypt_text
+      # TODO: parse response for multiple cips
+      cip['ConfirSolPagos']['ConfirSolPago']['CIP']['IdEstado']
     end
 
     def delete_cip
