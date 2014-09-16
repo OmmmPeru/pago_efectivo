@@ -11,8 +11,7 @@ Gem::Specification.new do |s|
   s.files = `git ls-files`.split("\n")
 
   s.add_runtime_dependency "gyoku"
-  s.add_runtime_dependency "ox"
-  s.add_runtime_dependency "rest-client"
+  s.add_runtime_dependency "savon"
 
   s.add_development_dependency "cutest"
 end
