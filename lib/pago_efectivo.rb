@@ -20,8 +20,8 @@ module PagoEfectivo
         @api_server = 'http://pre.pagoefectivo.pe'
       end
 
-      if ENV['QUOTAGUARDSTATIC_URL'] != nil
-        @proxy = ENV['QUOTAGUARDSTATIC_URL']
+      if ENV['PROXY_URL'] != nil
+        @proxy = ENV['PROXY_URL']
       end
       @crypto_path = '/PagoEfectivoWSCrypto/WSCrypto.asmx?WSDL'
       @cip_path = '/PagoEfectivoWSGeneralv2/service.asmx?WSDL'
