@@ -1,2 +1,93 @@
 # Pago efectivo
 Ruby SOAP Client to connect with [pago efectivo](https://pagoefectivo.pe/) api.
+
+## install
+You can via
+```
+gem install pago_efectivo
+```
+or by adding to your Gemfile
+```
+gem 'pago_efectivo'
+```
+
+## usage
+
+To use this gem you need a service code and keys provided by pago efectivo.
+
+The first step to use is init a client and set keys
+
+```
+require 'pago_efectivo'
+
+# init client
+pago_client = PagoEfectivo::Client.new
+
+# set keys
+pago_client.set_key type_of_key, path_to_your_key
+```
+
+To generate a cip
+
+```
+# generate xml
+xml = pago_client.generate_xml('RSI', PagoEfectivo::CURRENCIES[:soles], '22.00', 1, 'OR001024', 'mail@example.com', {first_name: 'Jweopan', last_name: 'Jnshska', doc_type: 'DNI', doc_num: '37283937', id: 293, email: 'nanan@mail.com'},'', '31/10/2014 17:00:00', {loc: 'San Isidro', prov: 'Lima', country: 'Perú'}, 'some order reference', '','')
+
+# get sign with xml
+sign = pago_client.signature xml
+
+# get encrypted xml
+encrypt = pago_client.encrypt_text xml
+
+# generate cip itself
+cip = pago_client.generate_cip 'RSI', sign, encrypt
+
+# decrypt cip result
+decrypted_cip = pago_client.unencrypt cip
+
+# parse decrypted cip
+cip_result = pago_client.parse_cip_result decrypted_cip
+```
+
+To consult cip
+```
+# encrypt cip number
+encrypted_cip = pago_client.encrypt_text '1086648'
+
+# sign cip number
+signed_cip = pago_client.signature '1086648'
+
+# consult cip
+consulted_result = pago_client.consult_cip 'RSI', signed_cip, encrypted_cip
+
+# decrypt result
+uncrypted = pago_client.unencrypt consulted_result[:xml]
+
+# parse cip
+cip = pago_client.parse_consult_cip_result uncrypted
+```
+
+To update expiration date
+```
+# encrypt cip number
+encrypted_cip = pago_client.encrypt_text '1086648'
+
+# sign cip number
+signed_cip = pago_client.signature '1086648'
+
+# update cip
+pago_client.update_cip 'RSI', signed_cip, encrypted_cip, new_date
+```
+### Note: new_date should be DateTime class
+
+To delete cip
+```
+# encrypt cip number
+encrypted_cip = pago_client.encrypt_text '1086648'
+
+# sign cip number
+signed_cip = pago_client.signature '1086648'
+
+# delete cip
+pago_client.delete_cip 'RSI', signed_cip, encrypted_cip
+```
