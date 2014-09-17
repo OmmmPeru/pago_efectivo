@@ -175,7 +175,23 @@ module PagoEfectivo
       cip['ConfirSolPagos']['ConfirSolPago']['CIP']
     end
 
-    def delete_cip
+    # cod_serv: service code, provided by pago efectivo
+    # signed_cip: number of cip to delete passed by signer method
+    # encrypted_cip: number of cip to delete passed by encrypted method
+    # info_request: no specified in pago efectivo documentation, send blank
+    #               for now
+    def delete_cip cod_serv, signed_cip, encrypted_cip, info_request=''
+      server = @api_server + @cip_path
+      client = Savon.client(wsdl: server, proxy: @proxy)
+      response = client.call(:eliminar_cip_mod1, message: {
+                   'request' => {
+                     'CodServ' => cod_serv,
+                     'Firma' => signed_cip,
+                     'CIP' => encrypted_cip,
+                     'InfoRequest' => info_request
+                   }
+                 })
+      response.to_hash[:eliminar_cip_mod1_response][:eliminar_cip_mod1_result]
     end
 
     # cod_serv: service code, provided by pago efectivo
