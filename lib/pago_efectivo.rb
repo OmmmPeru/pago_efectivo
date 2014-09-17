@@ -172,7 +172,7 @@ module PagoEfectivo
       parser = Nori.new
       cip = parser.parse uncrypt_text
       # TODO: parse response for multiple cips
-      cip['ConfirSolPagos']['ConfirSolPago']['CIP']['IdEstado']
+      cip['ConfirSolPagos']['ConfirSolPago']['CIP']
     end
 
     def delete_cip
