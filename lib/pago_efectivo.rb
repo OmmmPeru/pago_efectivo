@@ -178,7 +178,25 @@ module PagoEfectivo
     def delete_cip
     end
 
-    def update_cip
+    # cod_serv: service code, provided by pago efectivo
+    # signed_cip: number of cip to modify passed by signer method
+    # encrypted_cip: number of cip to modify passed by encrypted method
+    # exp_date: new expiration date, should be DateTime class
+    # info_request: no specified in pago efectivo documentation, send blank
+    #               for now
+    def update_cip cod_serv,signed_cip,encrypted_cip,exp_date,info_request=''
+      server = @api_server + @cip_path
+      client = Savon.client(wsdl: server, proxy: @proxy)
+      response = client.call(:actualizar_cip_mod1, message: {
+                   'request' => {
+                     'CodServ' => cod_serv,
+                     'Firma' => signed_cip,
+                     'CIP' => encrypted_cip,
+                     'FechaExpira' => exp_date,
+                     'InfoRequest' => info_request
+                   }
+                 })
+      response.to_hash[:actualizar_cip_mod1_response][:actualizar_cip_mod1_result]
     end
   end
 end
