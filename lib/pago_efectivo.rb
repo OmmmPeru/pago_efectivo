@@ -13,18 +13,25 @@ module PagoEfectivo
       'xmlns:soap' => 'http://schemas.xmlsoap.org/soap/envelope/'
     }
 
-    def initialize env=nil
+    def initialize env=nil, proxy=false
       if env == 'production'
         @api_server = 'https://pagoefectivo.pe'
       else
         @api_server = 'http://pre.pagoefectivo.pe'
       end
 
-      if ENV['PROXY_URL'] != nil
-        @proxy = ENV['PROXY_URL']
+      crypto_path = '/PagoEfectivoWSCrypto/WSCrypto.asmx?WSDL'
+      cip_path = '/PagoEfectivoWSGeneralv2/service.asmx?WSDL'
+      crypto_service = @api_server + crypto_path
+      cip_service = @api_server + cip_path
+
+      if proxy
+        @crypto_client = Savon.client(wsdl: crypto_service, proxy: ENV['PROXY_URL'])
+        @cip_client = Savon.client(wsdl: cip_service, proxy: ENV['PROXY_URL'])
+      else
+        @crypto_client = Savon.client(wsdl: crypto_service)
+        @cip_client = Savon.client(wsdl: cip_service)
       end
-      @crypto_path = '/PagoEfectivoWSCrypto/WSCrypto.asmx?WSDL'
-      @cip_path = '/PagoEfectivoWSGeneralv2/service.asmx?WSDL'
     end
 
     def set_key type, path
@@ -41,29 +48,23 @@ module PagoEfectivo
    end
 
     def signature(text)
-      server = @api_server + @crypto_path
-      client = Savon.client(wsdl: server, proxy: @proxy)
-      response = client.call(:signer, message: {
-                              plain_text: text, private_key: @private_key
-                            })
+      response = @crypto_client.call(:signer, message: {
+                                  plain_text: text, private_key: @private_key
+                                })
       response.to_hash[:signer_response][:signer_result]
     end
 
     def encrypt_text(text)
-      server = @api_server + @crypto_path
-      client = Savon.client(wsdl: server, proxy: @proxy)
-      response = client.call(:encrypt_text, message: {
-                              plain_text: text, public_key: @public_key
-                            })
+      response = @crypto_client.call(:encrypt_text, message: {
+                                  plain_text: text, public_key: @public_key
+                                })
       response.to_hash[:encrypt_text_response][:encrypt_text_result]
     end
 
     def unencrypt enc_text
-      server = @api_server + @crypto_path
-      client = Savon.client(wsdl: server, proxy: @proxy)
-      response = client.call(:decrypt_text, message: {
-                              encrypt_text: enc_text, private_key: @private_key
-                            })
+      response = @crypto_client.call(:decrypt_text, message: {
+                                  encrypt_text: enc_text, private_key: @private_key
+                                })
       response.to_hash[:decrypt_text_response][:decrypt_text_result]
     end
 
@@ -135,9 +136,7 @@ module PagoEfectivo
     end
 
     def generate_cip(cod_serv, signer, xml)
-      server = @api_server + @cip_path
-      client = Savon.client(wsdl: server, proxy: @proxy)
-      response = client.call(:generar_cip_mod1, message: {
+      response = @cip_client.call(:generar_cip_mod1, message: {
                               request: {
                                 'CodServ' => cod_serv,
                                 'Firma' => signer,
@@ -153,9 +152,7 @@ module PagoEfectivo
     # info_request: no specified in pago efectivo documentation, send blank
     #               for now
     def consult_cip cod_serv, signed_cips, encrypted_cips, info_request=''
-      server = @api_server + @cip_path
-      client = Savon.client(wsdl: server, proxy: @proxy)
-      response = client.call(:consultar_cip_mod1, message: {
+      response = @cip_client.call(:consultar_cip_mod1, message: {
                    'request' => {
                      'CodServ' => cod_serv,
                      'Firma' => signed_cips,
@@ -181,9 +178,7 @@ module PagoEfectivo
     # info_request: no specified in pago efectivo documentation, send blank
     #               for now
     def delete_cip cod_serv, signed_cip, encrypted_cip, info_request=''
-      server = @api_server + @cip_path
-      client = Savon.client(wsdl: server, proxy: @proxy)
-      response = client.call(:eliminar_cip_mod1, message: {
+      response = @cip_client.call(:eliminar_cip_mod1, message: {
                    'request' => {
                      'CodServ' => cod_serv,
                      'Firma' => signed_cip,
@@ -201,9 +196,7 @@ module PagoEfectivo
     # info_request: no specified in pago efectivo documentation, send blank
     #               for now
     def update_cip cod_serv,signed_cip,encrypted_cip,exp_date,info_request=''
-      server = @api_server + @cip_path
-      client = Savon.client(wsdl: server, proxy: @proxy)
-      response = client.call(:actualizar_cip_mod1, message: {
+      response = @cip_client.call(:actualizar_cip_mod1, message: {
                    'request' => {
                      'CodServ' => cod_serv,
                      'Firma' => signed_cip,
