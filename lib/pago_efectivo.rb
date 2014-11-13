@@ -70,10 +70,19 @@ module PagoEfectivo
 
     # after unencrypt cip result this return like string so we need parse this
     # for access cip data in more easy way
-    def parse_cip_result uncrypt_text
+    def parse_cip_result uncrypt_text, keys=[]
       parser = Nori.new
       cip = parser.parse uncrypt_text
-      cip['ConfirSolPago']['CIP']
+      if keys.length > 0
+        result = cip
+
+        keys.map do |k|
+          result = result[k]
+        end
+        result
+      else
+        cip
+      end
     end
 
     def generate_xml(cod_serv, currency, total, pay_methods, cod_trans, email,
