@@ -17,7 +17,7 @@ module PagoEfectivo
       if env == 'production'
         @api_server = 'https://pagoefectivo.pe'
       else
-        @api_server = 'https://pre.2b.pagoefectivo.pe'
+        @api_server = 'http://pre.2b.pagoefectivo.pe'
       end
 
       crypto_path = '/PagoEfectivoWSCrypto/WSCrypto.asmx?WSDL'
