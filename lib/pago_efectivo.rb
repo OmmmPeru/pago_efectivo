@@ -17,6 +17,7 @@ module PagoEfectivo
       if env == 'production'
         @api_server = 'https://pagoefectivo.pe'
       else
+        Savon.client(ssl_verify_mode: :none)
         @api_server = 'http://pre.2b.pagoefectivo.pe'
       end
 
