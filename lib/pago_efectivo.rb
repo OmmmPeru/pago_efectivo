@@ -17,7 +17,7 @@ module PagoEfectivo
       if env == 'production'
         @api_server = 'https://pagoefectivo.pe'
       else
-        Savon.client(ssl_verify_mode: :none)
+        #Savon.client(ssl_verify_mode: :none)
         @api_server = 'http://pre.2b.pagoefectivo.pe'
       end
 
@@ -27,11 +27,11 @@ module PagoEfectivo
       cip_service = @api_server + cip_path
 
       if proxy
-        @crypto_client = Savon.client(wsdl: crypto_service, proxy: ENV['PROXY_URL'])
-        @cip_client = Savon.client(wsdl: cip_service, proxy: ENV['PROXY_URL'])
+        @crypto_client = Savon.client(wsdl: crypto_service, proxy: ENV['PROXY_URL'],ssl_verify_mode: :none)
+        @cip_client = Savon.client(wsdl: cip_service, proxy: ENV['PROXY_URL'],ssl_verify_mode: :none)
       else
-        @crypto_client = Savon.client(wsdl: crypto_service)
-        @cip_client = Savon.client(wsdl: cip_service)
+        @crypto_client = Savon.client(wsdl: crypto_service,ssl_verify_mode: :none)
+        @cip_client = Savon.client(wsdl: cip_service,ssl_verify_mode: :none)
       end
     end
 
