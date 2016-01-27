@@ -15,7 +15,7 @@ module PagoEfectivo
 
     def initialize env=nil, proxy=false
       if env == 'production'
-        @api_server = 'https://pagoefectivo.pe'
+        @api_server = 'http://pre.2b.pagoefectivo.pe'
       else
         @api_server = 'http://pre.2b.pagoefectivo.pe'
       end
