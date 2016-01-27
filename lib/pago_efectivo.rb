@@ -38,8 +38,10 @@ module PagoEfectivo
       raise 'path to your key is not valid' unless File.exists?(path)
       if type == 'private'
         @private_key = File.open(path, 'rb') {|f| Base64.encode64(f.read)}
+        @private_key = @private_key[0..-3]
       elsif type == 'public'
         @public_key = File.open(path, 'rb') {|f| Base64.encode64(f.read)}
+        @public_key = @public_key[0..-3]
       end
     end
 
