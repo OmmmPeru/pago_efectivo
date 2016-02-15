@@ -25,12 +25,22 @@ module PagoEfectivo
       crypto_service = @api_server + crypto_path
       cip_service = @api_server + cip_path
 
-      if proxy
-        @crypto_client = Savon.client(wsdl: crypto_service, proxy: ENV['PROXY_URL'])
-        @cip_client = Savon.client(wsdl: cip_service, proxy: ENV['PROXY_URL'])
+      if env=='production'
+        if proxy
+          @crypto_client = Savon.client(wsdl: crypto_service, proxy: ENV['PROXY_URL'])
+          @cip_client = Savon.client(wsdl: cip_service, proxy: ENV['PROXY_URL'])
+        else
+          @crypto_client = Savon.client(wsdl: crypto_service)
+          @cip_client = Savon.client(wsdl: cip_service)
+        end
       else
-        @crypto_client = Savon.client(wsdl: crypto_service)
-        @cip_client = Savon.client(wsdl: cip_service)
+        if proxy
+          @crypto_client = Savon.client(wsdl: crypto_service, proxy: ENV['PROXY_URL'], ssl_verify_mode: :none)
+          @cip_client = Savon.client(wsdl: cip_service, proxy: ENV['PROXY_URL'], ssl_verify_mode: :none)
+        else
+          @crypto_client = Savon.client(wsdl: crypto_service, ssl_verify_mode: :none)
+          @cip_client = Savon.client(wsdl: cip_service, ssl_verify_mode: :none)
+        end
       end
     end
 
