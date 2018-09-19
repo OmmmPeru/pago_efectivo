@@ -4,7 +4,9 @@ require 'nokogiri'
 
 module PagoEfectivo
   CURRENCIES = {soles: {id: 1, symbol: 'S/.'}, dolares: {id: 2, symbol: '$'}}
-  PAY_METHODS = [1,2] #[{'bancos' => 1}, {'cuenta_virtual' => 2}]
+  # 1 => bancos
+  # 2 => cuenta_virtual
+  PAY_METHODS = [1,2]
 
   class Client
     SCHEMA_TYPES = {
@@ -13,8 +15,8 @@ module PagoEfectivo
       'xmlns:soap' => 'http://schemas.xmlsoap.org/soap/envelope/'
     }
 
-    def initialize env=nil, proxy=false
-      if env == 'production'
+    def initialize(options = {})
+      if options[:env] == 'production'
         @api_server = 'https://pagoefectivo.pe'
       else
         @api_server = 'https://pre.2b.pagoefectivo.pe'
@@ -24,24 +26,12 @@ module PagoEfectivo
       cip_path = '/PagoEfectivoWSGeneralv2/service.asmx?WSDL'
       crypto_service = @api_server + crypto_path
       cip_service = @api_server + cip_path
+      savon_opts = {}
+      savon_opts[:proxy] = ENV['PROXY_URL'] if options[:proxy]
+      savon_opts[:ssl_verify_mode] = none if options[:ssl] == false
 
-      if env=='production'
-        if proxy
-          @crypto_client = Savon.client(wsdl: crypto_service, proxy: ENV['PROXY_URL'])
-          @cip_client = Savon.client(wsdl: cip_service, proxy: ENV['PROXY_URL'])
-        else
-          @crypto_client = Savon.client(wsdl: crypto_service)
-          @cip_client = Savon.client(wsdl: cip_service)
-        end
-      else
-        if proxy
-          @crypto_client = Savon.client(wsdl: crypto_service, proxy: ENV['PROXY_URL'], ssl_verify_mode: :none)
-          @cip_client = Savon.client(wsdl: cip_service, proxy: ENV['PROXY_URL'], ssl_verify_mode: :none)
-        else
-          @crypto_client = Savon.client(wsdl: crypto_service, ssl_verify_mode: :none)
-          @cip_client = Savon.client(wsdl: cip_service, ssl_verify_mode: :none)
-        end
-      end
+      @crypto_client = Savon.client({ wsdl: crypto_service }.merge(savon_opts))
+      @cip_client = Savon.client({ wsdl: cip_service }.merge(savon_opts))
     end
 
     def set_key type, path
