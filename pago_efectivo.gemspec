@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = "pago_efectivo"
-  s.version = "0.0.1"
+  s.version = "1.0.0.aplha"
   s.summary = "SOAP client to use Pago Efectivo"
   s.description = s.summary
   s.authors = ["César Carruitero"]
