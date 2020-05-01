@@ -80,65 +80,88 @@ module PagoEfectivo
       end
     end
 
-    def generate_xml(cod_serv, currency, total, pay_methods, cod_trans, email,
-                     user, additional_data, exp_date, place, pay_concept,
-                     origin_code, origin_type)
-      # cod_serv => código de servicio asignado
-      # signer => trama firmada con llave privada
-      child_hash = { sol_pago: {
-                 id_moneda: currency[:id],
-                 total: total, # 18 enteros, 2 decimales. Separados por `,`
-                 metodos_pago: pay_methods,
-                 cod_servicio: cod_serv,
-                 codtransaccion: cod_trans, # referencia al pago
-                 email_comercio: email,
-                 fecha_a_expirar: exp_date, # (DateTime.now + 4).to_s(:db)
-                 usuario_id: user[:id],
-                 data_adicional: additional_data,
-                 usuario_nombre: user[:first_name],
-                 usuario_apellidos: user[:last_name],
-                 usuario_localidad: place[:loc],
-                 usuario_provincia: place[:prov],
-                 usuario_pais: place[:country],
-                 usuario_alias: '',
-                 usuario_tipo_doc: user[:doc_type], # tipo de documento DNI, LE, RUC
-                 usuario_numero_doc: user[:doc_num],
-                 usuario_email: user[:email],
-                 concepto_pago: pay_concept,
-                 detalles: {
-                   detalle: {
-                     cod_origen: origin_code,
-                     tipo_origen: origin_type,
-                     concepto_pago: pay_concept,
-                     importe: total,
-                     campo1: '',
-                     campo2: '',
-                     campo3: '',
-                   }
-                 },
-                 params_url: {
-                   param_url: {
-                     nombre: 'IDCliente',
-                     valor: user[:id]
-                   },
-                   params_email: {
-                     param_email: {
-                       nombre: '[UsuarioNombre]',
-                       valor: user[:first_name]
-                     },
-                     param_email: {
-                       nombre: '[Moneda]',
-                       valor: currency[:symbol]
-                     }
-                   }
-                 }
-               }
-             }
+    # Build an xml with given options
+    # cod_serv: service code, provided by pago efectivo
+    # currency: currency of operation, once of PagoEfectivo::CURRENCIES
+    # total: total operation. 18 enteros, 2 decimales.
+    # pay_method: desired pay method, once of PagoEfectivo::PAY_METHODS
+    # cod_transaction: transaction reference
+    # email: commerce email
+    # user: an object or hash that represent a customer
+    # - first_name: customer first name
+    # - last_name: customer last name
+    # - doc_type: document type. DNI, LE, RUC
+    # - doc_num: document number
+    # - id: commerce customer identifier
+    # - email: customer email
+    # additional_data: additional information
+    # exp_date: cip expiration date. Should be in the format '31/10/2014 17:00:00',
+    # place: an object or hash that represent a customer address
+    # - loc: customer address location. Ex: Surco
+    # - prov: customer address province. Ex: Lima
+    # - country: customer address country: Ex: Peru
+    # pay_concept: an order reference
+    # origin_code
+    # origin_type
+    def generate_xml(opts = {})
+      child_hash = {
+        sol_pago: {
+          id_moneda: opts[:currency][:id],
+          total: opts[:total],
+          metodos_pago: opts[:pay_method],
+          cod_servicio: opts[:cod_serv],
+          codtransaccion: opts[:cod_transaction],
+          email_comercio: opts[:email],
+          fecha_a_expirar: opts[:exp_date],
+          usuario_id: opts[:user][:id],
+          data_adicional: opts[:additional_data],
+          usuario_nombre: opts[:user][:first_name],
+          usuario_apellidos: opts[:user][:last_name],
+          usuario_localidad: opts[:place][:loc],
+          usuario_provincia: opts[:place][:prov],
+          usuario_pais: opts[:place][:country],
+          usuario_alias: '',
+          usuario_tipo_doc: opts[:user][:doc_type],
+          usuario_numero_doc: opts[:user][:doc_num],
+          usuario_email: opts[:user][:email],
+          concepto_pago: opts[:pay_concept],
+          detalles: {
+            detalle: {
+              cod_origen: opts[:origin_code],
+              tipo_origen: opts[:origin_type],
+              concepto_pago: opts[:pay_concept],
+              importe: opts[:total],
+              campo1: '',
+              campo2: '',
+              campo3: '',
+            }
+          },
+          params_url: {
+            param_url: {
+              nombre: 'IDCliente',
+              valor: opts[:user][:id]
+            },
+            params_email: {
+              param_email: {
+                nombre: '[UsuarioNombre]',
+                valor: opts[:user][:first_name]
+              },
+              param_email: {
+                nombre: '[Moneda]',
+                valor: opts[:currency][:symbol]
+              }
+            }
+          }
+        }
+      }
       child_options = { key_converter: :camelcase}
       gyoku_xml = Gyoku.xml(child_hash, child_options)
       xml_child = create_markup(gyoku_xml)
     end
 
+    # cod_serv: service code, provided by pago efectivo
+    # signer: xml signed with private key
+    # xml: encrypted xml
     def generate_cip(cod_serv, signer, xml)
       response = @cip_client.call(:generar_cip_mod1, message: {
                               request: {

@@ -31,7 +31,22 @@ To generate a cip
 
 ``` ruby
 # generate xml
-xml = pago_client.generate_xml('RSI', PagoEfectivo::CURRENCIES[:soles], '22.00', 1, 'OR001024', 'mail@example.com', {first_name: 'Jweopan', last_name: 'Jnshska', doc_type: 'DNI', doc_num: '37283937', id: 293, email: 'nanan@mail.com'},'', '31/10/2014 17:00:00', {loc: 'San Isidro', prov: 'Lima', country: 'Peru'}, 'some order reference', '','')
+options = {
+  cod_serv: 'RSI',
+  currency: PagoEfectivo::CURRENCIES[:soles],
+  total: '22.00',
+  pay_method: 1,
+  cod_transaction: 'OR001024',
+  email: 'mail@example.com',
+  user: {first_name: 'Jweopan', last_name: 'Jnshska', doc_type: 'DNI', doc_num: '37283937', id: 293, email: 'nanan@mail.com'},
+  additional_data: '',
+  exp_date: '31/10/2014 17:00:00',
+  place: {loc: 'San Isidro', prov: 'Lima', country: 'Peru'},
+  pay_concept: 'some order reference',
+  origin_code: '',
+  origin_type''
+}
+xml = pago_client.generate_xml(options)
 
 # get sign with xml
 sign = pago_client.signature xml
